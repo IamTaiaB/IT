@@ -1,44 +1,27 @@
 # IT
-import os
-import subprocess
-import imageio_ffmpeg
-import librosa
-import librosa.display
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import noisereduce as nr
-import soundfile as sf
-import numpy as np
+# Название проекта: Обработка длинного видео (извлечение аудио, спектрограмма, шумоподавление)
 
-ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+## Описание работы скрипта
+Скрипт выполняет три задачи:
+1. Извлекает аудиодорожку из длинного видеофайла (long_video.mp4) с помощью FFmpeg.
+2. Строит и сохраняет спектрограмму для первых 60 секунд аудио (используется библиотека librosa).
+3. Очищает извлеченное аудио от фонового шума с помощью библиотеки noisereduce (обработка идет кусками, чтобы не переполнять оперативную память).
 
-video_file = "long_video.mp4"
-audio_file = "long_audio.wav"
+## Необходимые библиотеки
+- imageio-ffmpeg
+- librosa
+- matplotlib
+- noisereduce
+- soundfile
+- numpy
 
-command = [ffmpeg_path, '-y', '-i', video_file, '-vn', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '1', audio_file]
-subprocess.run(command, check=True)
+## Инструкция по запуску
+1. Поместить файл видео с именем "long_video.mp4" в одну папку со скриптом.
+2. Запустить скрипт командой в терминале: 
+   `python long_video_work.py`
 
-y, sr = librosa.load(audio_file, sr=None, duration=60) 
-
-plt.figure(figsize=(15, 6))
-D = librosa.amplitude_to_db(librosa.stft(y), ref=np.max)
-librosa.display.specshow(D, sr=sr, x_axis='time', y_axis='log')
-plt.colorbar(format='%+2.0f dB')
-plt.title('Спектрограмма (первые 60 секунд)')
-plt.tight_layout()
-plt.savefig("long_spectrogram.png")
-
-data, rate = sf.read(audio_file)
-
-chunk_size = 1000000
-cleaned_data = []
-for i in range(0, len(data), chunk_size):
-    chunk = data[i:i+chunk_size]
-    if len(chunk) < 1000:
-        break
-    cleaned_chunk = nr.reduce_noise(y=chunk, sr=rate, stationary=True, prop_decrease=0.8)
-    cleaned_data.append(cleaned_chunk)
-
-cleaned_audio = np.concatenate(cleaned_data)
-sf.write("long_clean_audio.wav", cleaned_audio, rate)
+## Результаты работы
+После успешного выполнения скрипта в папке появятся три файла:
+- `long_audio.wav` (извлеченный из видео звук)
+- `long_spectrogram.png` (картинка спектрограммы)
+- `long_clean_audio.wav` (аудио с удаленным шумом)
